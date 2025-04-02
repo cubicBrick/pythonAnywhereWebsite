@@ -1,0 +1,96 @@
+/* Import Google Font */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+/* General Reset */
+body, h1, p, input, button {
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', sans-serif;
+    box-sizing: border-box;
+}
+
+/* Center content */
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #1e1e2e; /* Dark theme */
+    color: #fff;
+}
+
+/* Main container for host & join pages */
+.container {
+    text-align: center;
+    background: #282a36; /* Slightly darker card */
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    max-width: 400px;
+    width: 90%;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Heading */
+h1 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+/* Game ID Styling */
+#game_id {
+    font-weight: 600;
+    color: #8be9fd; /* Light blue */
+}
+
+/* Paragraph text */
+p {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* Input field */
+input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 1rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    text-align: center;
+    background: #44475a; /* Dark input field */
+    color: white;
+}
+
+/* Button Styling */
+button {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    background-color: #8be9fd;
+    color: #1e1e2e;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.3s ease-in-out;
+}
+
+button:hover {
+    background-color: #50fa7b; /* Green on hover */
+}
+
+/* Status message */
+#status {
+    margin-top: 1rem;
+    font-size: 1rem;
+    font-weight: 400;
+    color: #f1fa8c; /* Yellow */
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join Game</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
+    <link rel="stylesheet" href="/static/style.css"> <!-- Unified CSS -->
+</head>
+<body>
+    <div class="container">
+        <h1>Join a Game</h1>
+        <input type="text" id="game_id" placeholder="Enter Game ID">
+        <button onclick="joinGame()">Join</button>
+        <p id="status"></p>
+    </div>
+
+    <script>
+        var socket = io();
+        
+        function joinGame() {
+            var gameId = document.getElementById("game_id").value;
+            socket.emit('join_game', {game_id: gameId});
+            document.getElementById("status").innerText = "Trying to join...";
+        }
+
+        socket.on('connected', function(data) {
+            document.getElementById("status").innerText = "Connected! Waiting to start...";
+        });
+
+        socket.on('start_game', function(data) {
+            document.getElementById("status").innerText = "Starting!";
+        });
+    </script>
+</body>
+</html>

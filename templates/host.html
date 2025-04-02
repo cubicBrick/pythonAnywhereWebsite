@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Host Game</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
+    <link rel="stylesheet" href="/static/style.css"> <!-- Unified CSS -->
+</head>
+<body>
+    <div class="container">
+        <h1>Hosting Game</h1>
+        <p>Game ID: <span id="game_id">{{ game_id }}</span></p>
+        <p id="wait">Waiting for a player to join...</p>
+    </div>
+
+    <script>
+        var socket = io();
+        socket.emit('host_game', { game_id: "{{ game_id }}" });
+
+        socket.on('start_game', function(data) {
+            alert("Game starting!");
+        });
+    </script>
+</body>
+</html>
