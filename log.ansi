@@ -1,3 +1,6 @@
 INFO:werkzeug: * Restarting with stat
 WARNING:werkzeug: * Debugger is active!
 INFO:werkzeug: * Debugger PIN: 829-593-099
+INFO:flask_app:[32mHost joined game id: 544997[0m
+INFO:flask_app:[32mAttempting to join game id: 544997[0m
+INFO:flask_app:[32mJoined game id: 544997[0m
