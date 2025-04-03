@@ -5,22 +5,83 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Host Game</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
-    <link rel="stylesheet" href="/static/style.css"> <!-- Unified CSS -->
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .board-container { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
+        .board-preview { width: 100px; height: 100px; border: 3px solid transparent; cursor: pointer; transition: border 0.3s; }
+        .board-preview:hover { border: 3px solid yellow; }
+        .board-preview.selected { border: 3px solid lime; }
+        #game_id_container { margin-top: 20px; font-size: 1.2rem; font-weight: bold; color: grey; }
+        #choose_button { display: none; margin-top: 10px; padding: 10px 20px; font-size: 1rem; background-color: #8be9fd; color: #1e1e2e; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        #choose_button:hover { background-color: #50fa7b; }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>Hosting Game</h1>
-        <p>Game ID: <span id="game_id">{{ game_id }}</span></p>
-        <p id="wait">Waiting for a player to join...</p>
+        <h1>Host a Game</h1>
+        <p>Select a board:</p>
+        <div class="board-container" id="board_selection">
+            {% for board_name, board in boards.items() %}
+                <canvas id="{{ board_name }}" class="board-preview"></canvas>
+            {% endfor %}
+        </div>
+        <button id="choose_button" onclick="confirmBoard()">Choose</button>
+        <p id="game_id_container">Game ID: <span id="game_id">{{ game_id }}</span></p>
     </div>
 
     <script>
         var socket = io();
-        socket.emit('host_game', { game_id: "{{ game_id }}" });
+        var selectedBoard = null;
+        var gameId = "{{ game_id }}";
 
-        socket.on('start_game', function(data) {
-            alert("Game starting!");
-        });
+        window.onload = function() {
+            var boards = {{ boards|tojson|safe }};
+
+            for (var boardName in boards) {
+                var canvas = document.getElementById(boardName);
+                drawBoardPreview(canvas, boards[boardName].nodes, boards[boardName].connections);
+
+                canvas.addEventListener('click', function() {
+                    if (selectedBoard) selectedBoard.classList.remove("selected");
+                    this.classList.add("selected");
+                    selectedBoard = this;
+                    document.getElementById("choose_button").style.display = "block";
+                });
+            }
+        };
+
+        function confirmBoard() {
+            if (!selectedBoard) return;
+            var boardName = selectedBoard.id;
+            socket.emit("select_board", { game_id: gameId, board: boardName });
+
+            socket.on("board_selected", function(data) {
+                document.getElementById("board_selection").style.display = "none";
+                document.getElementById("choose_button").style.display = "none";
+                document.getElementById("game_id_container").style.color = "white";  // Reveal game ID
+            });
+        }
+
+        function drawBoardPreview(canvas, nodes, connections) {
+            var ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#44475a";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "white";
+            nodes.forEach(([x, y]) => {
+                ctx.beginPath();
+                ctx.arc(x * 20 + 10, y * 20 + 10, 5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            ctx.strokeStyle = "lightblue";
+            connections.forEach(([[x1, y1], [x2, y2]]) => {
+                ctx.beginPath();
+                ctx.moveTo(x1 * 20 + 10, y1 * 20 + 10);
+                ctx.lineTo(x2 * 20 + 10, y2 * 20 + 10);
+                ctx.stroke();
+            });
+        }
     </script>
 </body>
 </html>
