@@ -1,18 +1,78 @@
 import logging
+from logging import ERROR, INFO, WARNING
+from colorama import Fore, Back, Style
 import random
 import string
-from flask import Flask, render_template, request
+import os
+from flask import Flask, render_template, request, send_from_directory
 from flask_socketio import SocketIO, emit, join_room
 from colorama import Fore, Style
 
+logging.basicConfig(filename="log.ansi")
 app = Flask(__name__)
 socketio = SocketIO(app)
 
+CLEAR_ALL = Style.RESET_ALL
+
 games = {}  # Stores active game sessions
-game_boards = {
-    "board1": {"nodes": [(0, 0), (1, 1), (2, 2)], "connections": [[(0, 0), (1, 1)], [(1, 1), (2, 2)]]},
-    "board2": {"nodes": [(0, 2), (1, 3), (2, 4)], "connections": [[(0, 2), (1, 3)], [(1, 3), (2, 4)]]}
-}  # Example boards
+def load_boards(filename="boards.txt"):
+    """Reads board configurations from a file and parses them into a dictionary."""
+    game_boards = {}  # Stores all parsed boards
+
+    with open(filename, "r") as file:
+        lines = [line.strip() for line in file if line.strip()]  # Remove empty lines
+
+    board_name = None
+    board_grid = []
+    connections = []
+    parsing_board = False
+
+    for line in lines:
+        if line.startswith("START BOARD"):
+            parts = line.split()
+            if len(parts) < 3:
+                app.logger.log(ERROR, Fore.RED + f"Invalid board definition: {line}" + CLEAR_ALL)
+                continue
+
+            board_name = parts[2]  # Extract board name
+            board_grid = []  # Reset grid storage
+            connections = []  # Reset connections
+            parsing_board = True
+            continue
+
+        if line == "END BOARD":
+            if board_name:
+                nodes = {}
+                for y, row in enumerate(board_grid):
+                    for x, char in enumerate(row):
+                        if char.isalpha():
+                            nodes[char] = (x, y)
+
+                parsed_connections = []
+                for connection in connections:
+                    node1, node2 = connection.split("-")
+                    if node1 in nodes and node2 in nodes:
+                        parsed_connections.append([nodes[node1], nodes[node2]])
+
+                game_boards[board_name] = {"nodes": list(nodes.values()), "connections": parsed_connections}
+
+            parsing_board = False
+            board_name = None
+            continue
+
+        if parsing_board:
+            if "-" in line and len(line) == 3:  
+                connections.append(line)
+            else:
+                board_grid.append(line)
+
+    return game_boards
+
+
+
+
+# Load the boards at startup
+game_boards = load_boards()
 
 def generate_game_id():
     return ''.join(random.choices(string.digits, k=6))
@@ -20,6 +80,10 @@ def generate_game_id():
 @app.route('/')
 def home():
     return render_template('index.html')
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'templates'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 @app.route('/host')
 def host():
@@ -39,10 +103,16 @@ def select_board(data):
             games[game_id]['board'] = game_boards[board_key]
             emit('board_selected', {'game_id': game_id, 'board': board_key}, room=request.sid)
             app.logger.info(Fore.BLUE + f"Board selected for game {game_id}: {board_key}" + Style.RESET_ALL)
+            join_room(game_id)
         else:
             emit('error', {'status': 'error', 'message': 'Invalid board selection'})
     else:
         emit('error', {'status': 'error', 'message': 'Game not found or board already chosen'})
+
+@app.route('/join')
+def join_page():
+    return render_template('join.html')
+
 
 @socketio.on('join_game')
 def join_game(data):
