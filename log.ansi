@@ -79,3 +79,11 @@ WARNING:werkzeug: * Debugger is active!
 INFO:werkzeug: * Debugger PIN: 829-593-099
 INFO:flask_app:[34mBoard selected for game 818547: 3_seperate[0m
 INFO:flask_app:[32mPlayer joined game 818547[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 829-593-099
+INFO:flask_app:[34mBoard selected for game 792303: 3_seperate[0m
+INFO:flask_app:[32mPlayer joined game 792303[0m
+INFO:werkzeug: * Detected change in 'C:\\Users\\s-jhor\\OneDrive - Lake Washington School District\\coding\\websites\\pythonAnywhereWebsite\\flask_app.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!

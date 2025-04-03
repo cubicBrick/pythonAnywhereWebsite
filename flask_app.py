@@ -15,7 +15,7 @@ socketio = SocketIO(app)
 CLEAR_ALL = Style.RESET_ALL
 
 games = {}  # Stores active game sessions
-def load_boards(filename="boards.txt"):
+def load_boards(filename=os.path.join(app.root_path, "boards.txt")):
     """Reads board configurations from a file and parses them into a dictionary."""
     game_boards = {}  # Stores all parsed boards
 
