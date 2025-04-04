@@ -87,3 +87,43 @@ INFO:flask_app:[32mPlayer joined game 792303[0m
 INFO:werkzeug: * Detected change in 'C:\\Users\\s-jhor\\OneDrive - Lake Washington School District\\coding\\websites\\pythonAnywhereWebsite\\flask_app.py', reloading
 INFO:werkzeug: * Restarting with stat
 WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 131-496-067
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 12:55:55] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 12:55:55] "[33mGET /static/main.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 12:55:56] "GET /favicon.ico HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 12:55:58] "GET /host HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 12:55:58] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 12:56:00] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 12:56:00] "[33mGET /static/main.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 12:56:02] "GET /join HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 12:56:02] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 13:23:08] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug: * Detected change in 'C:\\Users\\s-jhor\\OneDrive - Lake Washington School District\\coding\\websites\\pythonAnywhereWebsite\\flask_app.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 131-496-067
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 13:24:55] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 13:24:55] "[33mGET /static/main.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 13:24:58] "GET /host HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 13:24:58] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 13:24:58] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 13:24:58] "[33mGET /static/main.css HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 13:25:00] "GET /join HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 13:25:00] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 13:25:03] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 13:26:54] "GET /host HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 13:26:54] "GET /static/style.css HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 13:26:55] "GET /favicon.ico HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 13:26:58] "POST /select_board HTTP/1.1" 200 -
+INFO:flask_app:[32mPlayer joined game 282426[0m
+INFO:werkzeug:127.0.0.1 - - [04/Apr/2025 13:27:09] "POST /join_game HTTP/1.1" 200 -
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!

@@ -1,14 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Host Game</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
     <link rel="stylesheet" href="/static/style.css">
+    <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
     <style>
-        
         .board-container {
             display: flex;
             gap: 15px;
@@ -57,7 +55,6 @@
         }
     </style>
 </head>
-
 <body>
     <div class="container">
         <h1>Host a Game</h1>
@@ -72,12 +69,29 @@
     </div>
 
     <script>
-        var socket = io();
         var selectedBoard = null;
         var gameId = "{{ game_id }}";
 
+        // Setup Pusher
+        var pusher = new Pusher('3e0ebe3dead147b684cc', {
+            cluster: 'us3'
+        });
+        var channel = pusher.subscribe('game-' + gameId);
+
+        channel.bind('board_selected', function(data) {
+            document.getElementById("board_selection").style.display = "none";
+            document.getElementById("choose_button").style.display = "none";
+            document.getElementById("game_id_container").style.color = "white";
+            document.getElementById("maintext").innerHTML = "Waiting for another player...";
+        });
+
+        channel.bind('connected', function(data) {
+            document.getElementById("maintext").innerHTML = "Your turn!";
+            document.getElementById("game_id_container").innerHTML = "";
+        });
+
         window.onload = function () {
-            var boards = {{ boards| tojson | safe}};
+            var boards = {{ boards | tojson | safe }};
             for (var boardName in boards) {
                 var canvas = document.getElementById(boardName);
                 drawBoardPreview(canvas, boards[boardName].nodes, boards[boardName].connections);
@@ -94,55 +108,38 @@
         function confirmBoard() {
             if (!selectedBoard) return;
             var boardName = selectedBoard.id;
-            socket.emit("select_board", { game_id: gameId, board: boardName });
 
-            socket.on("board_selected", function (data) {
-                document.getElementById("board_selection").style.display = "none";
-                document.getElementById("choose_button").style.display = "none";
-                document.getElementById("game_id_container").style.color = "white";  // Reveal game ID
-                document.getElementById("maintext").innerHTML = "Waiting for another player...";
+            fetch("/select_board", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ game_id: gameId, board: boardName })
             });
-            socket.on("connected", function(data){
-                document.getElementById("maintext").innerHTML = "Your turn!";
-                document.getElementById("game_id_container").innerHTML = "";
-            })
         }
 
         function drawBoardPreview(canvas, nodes, connections) {
             var ctx = canvas.getContext("2d");
+            canvas.width = 140;
+            canvas.height = 70;
             ctx.fillStyle = "#44475a";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            canvas.height = 140;
-            canvas.width = 2 * canvas.height;
 
             ctx.fillStyle = "white";
             var scale = 2;
             nodes.forEach(([x, y]) => {
-                ctx.fillRect(scale * x * 30, y * 30, scale * 20, 20); // Rectangle (width = 20, height = 10)
+                ctx.fillRect(scale * x * 15, y * 15, scale * 10, 10);
             });
 
             ctx.strokeStyle = "white";
-            var scale2 = 30;
-            var offset = 10;
-            ctx.lineWidth = 5.0;
+            var scale2 = 15;
+            var offset = 5;
+            ctx.lineWidth = 3.0;
             connections.forEach(([[x1, y1], [x2, y2]]) => {
                 ctx.beginPath();
-                ctx.moveTo(scale * (x1 * scale2 + offset), y1 * scale2 + offset); // Center of first rectangle
-                ctx.lineTo(scale * (x2 * scale2 + offset), y2 * scale2 + offset); // Center of second rectangle
+                ctx.moveTo(scale * (x1 * scale2 + offset), y1 * scale2 + offset);
+                ctx.lineTo(scale * (x2 * scale2 + offset), y2 * scale2 + offset);
                 ctx.stroke();
             });
         }
-        document.querySelectorAll("canvas").forEach(canvas => {
-            canvas.addEventListener("click", function () {
-                // Remove 'selected' from all canvases
-                document.querySelectorAll("canvas").forEach(c => c.classList.remove("selected"));
-
-                // Add 'selected' to the clicked canvas
-                this.classList.add("selected");
-            });
-        });
-
     </script>
 </body>
-
 </html>

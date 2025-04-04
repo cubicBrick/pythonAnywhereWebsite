@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Join Game</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
-    <link rel="stylesheet" href="/static/style.css"> <!-- Unified CSS -->
+    <script src="https://js.pusher.com/7.0/pusher.min.js"></script>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="container">
@@ -15,22 +15,41 @@
         <p id="status"></p>
     </div>
 
-    <script>
-        var socket = io();
-        
-        function joinGame() {
-            var gameId = document.getElementById("game_id").value;
-            socket.emit('join_game', {game_id: gameId});
+<script src="https://js.pusher.com/7.2/pusher.min.js"></script>
+<script>
+    function joinGame() {
+        const gameId = document.getElementById("game_id").value;
+        fetch("/join_game", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ game_id: gameId })
+        })
+        .then(res => {
+            if (!res.ok) throw new Error();
             document.getElementById("status").innerText = "Trying to join...";
-        }
+            setupPusher(gameId);
+        })
+        .catch(() => {
+            document.getElementById("status").innerText = "Join failed.";
+        });
+    }
 
-        socket.on('connected', function(data) {
+    function setupPusher(gameId) {
+        var pusher = new Pusher('3e0ebe3dead147b684cc', {
+            cluster: 'us3'
+        });
+
+        var channel = pusher.subscribe('game-' + gameId);
+
+        channel.bind('connected', function(data) {
             document.getElementById("status").innerText = "Connected! Waiting to start...";
         });
 
-        socket.on('start_game', function(data) {
+        channel.bind('start_game', function(data) {
             document.getElementById("status").innerText = "Starting!";
         });
-    </script>
+    }
+</script>
+
 </body>
 </html>
