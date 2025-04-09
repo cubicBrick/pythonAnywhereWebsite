@@ -8,7 +8,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
     <link rel="stylesheet" href="/static/style.css">
     <style>
-        
         .board-container {
             display: flex;
             gap: 15px;
@@ -69,15 +68,23 @@
         </div>
         <button id="choose_button" onclick="confirmBoard()">Choose</button>
         <p id="game_id_container">Game ID: <span id="game_id">{{ game_id }}</span></p>
+        <div style="margin: auto;">
+            <canvas id="main_game_board" style="display:none; margin-top: 20px;"></canvas>
+        </div>
+        <div id="hand_container" style="display:none; margin-top: 10px; text-align: center;">
+            <p>Your Cards:</p>
+            <div id="card_hand" style="display: flex; gap: 10px; justify-content: center;"></div>
+        </div>
+
     </div>
 
     <script>
         var socket = io();
         var selectedBoard = null;
         var gameId = "{{ game_id }}";
+        var boards = {{ boards | tojson | safe }};
 
         window.onload = function () {
-            var boards = {{ boards| tojson | safe}};
             for (var boardName in boards) {
                 var canvas = document.getElementById(boardName);
                 drawBoardPreview(canvas, boards[boardName].nodes, boards[boardName].connections);
@@ -99,14 +106,81 @@
             socket.on("board_selected", function (data) {
                 document.getElementById("board_selection").style.display = "none";
                 document.getElementById("choose_button").style.display = "none";
-                document.getElementById("game_id_container").style.color = "white";  // Reveal game ID
+                document.getElementById("game_id_container").style.color = "white";
                 document.getElementById("maintext").innerHTML = "Waiting for another player...";
             });
-            socket.on("connected", function(data){
+
+            socket.on("connected", function (data) {
                 document.getElementById("maintext").innerHTML = "Your turn!";
                 document.getElementById("game_id_container").innerHTML = "";
-            })
+
+                const boardData = boards[selectedBoard.id];
+                const canvas = document.getElementById("main_game_board");
+                canvas.style.display = "block";
+                drawLargeBoard(canvas, boardData.nodes, boardData.connections);
+
+                // Show hand
+                const handDiv = document.getElementById("card_hand");
+                handDiv.innerHTML = ""; // Clear old cards just in case
+                data.cards.forEach(card => {
+                    const cardElem = document.createElement("div");
+                    cardElem.textContent = card;
+                    cardElem.style.border = "2px solid white";
+                    cardElem.style.padding = "10px";
+                    cardElem.style.backgroundColor = "#44475a";
+                    cardElem.style.color = "white";
+                    cardElem.style.borderRadius = "8px";
+                    cardElem.style.minWidth = "30px";
+                    cardElem.style.fontSize = "1.2rem";
+                    handDiv.appendChild(cardElem);
+                });
+
+                document.getElementById("hand_container").style.display = "block";
+            });
+
         }
+
+        function drawLargeBoard(canvas, nodes, connections) {
+            const scale = 2.75;
+            const cellSize = 30;
+            const nodeSize = 20;
+            const offset = 10 + 5 / scale;
+
+            const width = scale * 5 * cellSize;
+            const height = scale * 5 * cellSize;
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#282a36";
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw connections first
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 5;
+            connections.forEach(([[x1, y1], [x2, y2]]) => {
+                ctx.beginPath();
+                ctx.moveTo(scale * (x1 * cellSize + offset), scale * (y1 * cellSize + offset));
+                ctx.lineTo(scale * (x2 * cellSize + offset), scale * (y2 * cellSize + offset));
+                ctx.stroke();
+            });
+
+            // Draw nodes after to cover line ends
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 5;
+            ctx.fillStyle = "#282a36";
+            nodes.forEach(([x, y]) => {
+                const px = scale * x * cellSize + 5;
+                const py = scale * y * cellSize + 5;
+                const size = scale * nodeSize;
+
+                ctx.strokeRect(px, py, size, size);
+                ctx.fillRect(px, py, size, size);
+            });
+        }
+
+
 
         function drawBoardPreview(canvas, nodes, connections) {
             var ctx = canvas.getContext("2d");
@@ -118,7 +192,7 @@
             ctx.fillStyle = "white";
             var scale = 2;
             nodes.forEach(([x, y]) => {
-                ctx.fillRect(scale * x * 30, y * 30, scale * 20, 20); // Rectangle (width = 20, height = 10)
+                ctx.fillRect(scale * x * 30, y * 30, scale * 20, 20);
             });
 
             ctx.strokeStyle = "white";
@@ -127,21 +201,11 @@
             ctx.lineWidth = 5.0;
             connections.forEach(([[x1, y1], [x2, y2]]) => {
                 ctx.beginPath();
-                ctx.moveTo(scale * (x1 * scale2 + offset), y1 * scale2 + offset); // Center of first rectangle
-                ctx.lineTo(scale * (x2 * scale2 + offset), y2 * scale2 + offset); // Center of second rectangle
+                ctx.moveTo(scale * (x1 * scale2 + offset), y1 * scale2 + offset);
+                ctx.lineTo(scale * (x2 * scale2 + offset), y2 * scale2 + offset);
                 ctx.stroke();
             });
         }
-        document.querySelectorAll("canvas").forEach(canvas => {
-            canvas.addEventListener("click", function () {
-                // Remove 'selected' from all canvases
-                document.querySelectorAll("canvas").forEach(c => c.classList.remove("selected"));
-
-                // Add 'selected' to the clicked canvas
-                this.classList.add("selected");
-            });
-        });
-
     </script>
 </body>
 

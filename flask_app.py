@@ -15,6 +15,8 @@ socketio = SocketIO(app)
 CLEAR_ALL = Style.RESET_ALL
 
 games = {}  # Stores active game sessions
+
+
 def load_boards(filename=os.path.join(app.root_path, "boards.txt")):
     """Reads board configurations from a file and parses them into a dictionary."""
     game_boards = {}  # Stores all parsed boards
@@ -31,7 +33,9 @@ def load_boards(filename=os.path.join(app.root_path, "boards.txt")):
         if line.startswith("START BOARD"):
             parts = line.split()
             if len(parts) < 3:
-                app.logger.log(ERROR, Fore.RED + f"Invalid board definition: {line}" + CLEAR_ALL)
+                app.logger.log(
+                    ERROR, Fore.RED + f"Invalid board definition: {line}" + CLEAR_ALL
+                )
                 continue
 
             board_name = parts[2]  # Extract board name
@@ -54,14 +58,17 @@ def load_boards(filename=os.path.join(app.root_path, "boards.txt")):
                     if node1 in nodes and node2 in nodes:
                         parsed_connections.append([nodes[node1], nodes[node2]])
 
-                game_boards[board_name] = {"nodes": list(nodes.values()), "connections": parsed_connections}
+                game_boards[board_name] = {
+                    "nodes": list(nodes.values()),
+                    "connections": parsed_connections,
+                }
 
             parsing_board = False
             board_name = None
             continue
 
         if parsing_board:
-            if "-" in line and len(line) == 3:  
+            if "-" in line and len(line) == 3:
                 connections.append(line)
             else:
                 board_grid.append(line)
@@ -69,64 +76,115 @@ def load_boards(filename=os.path.join(app.root_path, "boards.txt")):
     return game_boards
 
 
-
-
 # Load the boards at startup
 game_boards = load_boards()
 
+
 def generate_game_id():
-    return ''.join(random.choices(string.digits, k=6))
+    return "".join(random.choices(string.digits, k=6))
 
-@app.route('/')
+
+@app.route("/")
 def home():
-    return render_template('index.html')
+    return render_template("index.html")
 
-@app.route('/favicon.ico')
+
+@app.route("/favicon.ico")
 def favicon():
-    return send_from_directory(os.path.join(app.root_path, 'templates'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+    return send_from_directory(
+        os.path.join(app.root_path, "templates"),
+        "favicon.ico",
+        mimetype="image/vnd.microsoft.icon",
+    )
 
-@app.route('/host')
+
+@app.route("/host")
 def host():
     """Generate game ID but do not send it to the frontend until board is chosen."""
     game_id = generate_game_id()
-    games[game_id] = {'host': request.remote_addr, 'player': None, 'board': None}
-    return render_template('host.html', game_id=game_id, boards=game_boards)  # Game ID is greyed out
+    games[game_id] = {"host": request.remote_addr, "player": None, "board": None}
+    return render_template(
+        "host.html", game_id=game_id, boards=game_boards
+    )  # Game ID is greyed out
 
-@socketio.on('select_board')
+
+@socketio.on("select_board")
 def select_board(data):
     """Handles board selection and reveals game ID."""
-    game_id = data.get('game_id')
-    board_key = data.get('board')
+    game_id = data.get("game_id")
+    board_key = data.get("board")
 
-    if game_id in games and games[game_id]['board'] is None:
+    if game_id in games and games[game_id]["board"] is None:
         if board_key in game_boards:
-            games[game_id]['board'] = game_boards[board_key]
-            emit('board_selected', {'game_id': game_id, 'board': board_key}, room=request.sid)
-            app.logger.info(Fore.BLUE + f"Board selected for game {game_id}: {board_key}" + Style.RESET_ALL)
+            games[game_id]["board"] = game_boards[board_key]
             join_room(game_id)
+            emit(
+                "board_selected", {"game_id": game_id, "board": board_key}, room=game_id
+            )
+            games[game_id]["host"] = request.sid
+            games[game_id]["cards_host"] = []
+            games[game_id]["cards_player"] = []
+            app.logger.info(
+                Fore.BLUE
+                + f"{game_id} - Board {board_key} selected"
+                + Style.RESET_ALL
+            )
         else:
-            emit('error', {'status': 'error', 'message': 'Invalid board selection'})
+            emit("error", {"status": "error", "message": "Invalid board selection"})
     else:
-        emit('error', {'status': 'error', 'message': 'Game not found or board already chosen'})
+        emit(
+            "error",
+            {"status": "error", "message": "Game not found or board already chosen"},
+        )
 
-@app.route('/join')
+
+@app.route("/join")
 def join_page():
-    return render_template('join.html')
+    return render_template("join.html")
 
 
-@socketio.on('join_game')
+@socketio.on("join_game")
 def join_game(data):
     """Allows a player to join only after board selection."""
-    game_id = data.get('game_id')
+    game_id = data.get("game_id")
 
-    if game_id in games and games[game_id]['player'] is None and games[game_id]['board']:
-        games[game_id]['player'] = request.remote_addr
+    if (
+        game_id in games
+        and games[game_id]["player"] is None
+        and games[game_id]["board"]
+    ):
+        games[game_id]["player"] = request.sid
         join_room(game_id)
-        emit('connected', {'status': 'connected'}, room=game_id)
-        emit('start_game', {'status': 'start'}, room=game_id)
-        app.logger.info(Fore.GREEN + f"Player joined game {game_id}" + Style.RESET_ALL)
+        app.logger.info(Fore.GREEN + f"{game_id} - Player joined game" + Style.RESET_ALL)
+        emit("connected", {"status": "connected"}, room=game_id)
+        emit("start_game", {"status": "start"}, room=game_id)
+        for _ in range(3):
+            games[game_id]["cards_host"].append(random.randint(0, 7))
+        app.logger.info(f"{game_id} - Host got cards: {games[game_id]["cards_host"]}")
+        emit(
+            "update_cards",
+            {
+                "0": games[game_id]["cards_host"][0],
+                "1": games[game_id]["cards_host"][1],
+                "2": games[game_id]["cards_host"][2],
+            },
+            room=request.sid
+        )
+        for _ in range(3):
+            games[game_id]["cards_player"].append(random.randint(0, 7))
+        app.logger.info(f"{game_id} - Player got cards: {games[game_id]["cards_player"]}")
+        emit(
+            "update_cards",
+            {
+                "0": games[game_id]["cards_player"][0],
+                "1": games[game_id]["cards_player"][1],
+                "2": games[game_id]["cards_player"][2],
+            },
+            room=request.sid
+        )
     else:
-        emit('error', {'status': 'error', 'message': 'Invalid or full game'})
+        emit("error", {"status": "error", "message": "Invalid or full game"})
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     socketio.run(app, debug=True)

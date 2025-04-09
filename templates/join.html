@@ -9,9 +9,9 @@
 </head>
 <body>
     <div class="container">
-        <h1>Join a Game</h1>
+        <h1 id="joingame">Join a Game</h1>
         <input type="text" id="game_id" placeholder="Enter Game ID">
-        <button onclick="joinGame()">Join</button>
+        <button onclick="joinGame()" id="joinButton">Join</button>
         <p id="status"></p>
     </div>
 
@@ -21,15 +21,18 @@
         function joinGame() {
             var gameId = document.getElementById("game_id").value;
             socket.emit('join_game', {game_id: gameId});
-            document.getElementById("status").innerText = "Trying to join...";
+            document.getElementById("status").innerText = "Trying to join... If you see this error for a long time: Check your game ID, make sure the host chose a board, or try again";
         }
 
         socket.on('connected', function(data) {
-            document.getElementById("status").innerText = "Connected! Waiting to start...";
+            // wait for start game
         });
 
         socket.on('start_game', function(data) {
-            document.getElementById("status").innerText = "Starting!";
+            document.getElementById("status").innerText = "Waiting for other player to do their turn...";
+            document.getElementById("joingame").remove();
+            document.getElementById("game_id").remove();
+            document.getElementById("joinButton").remove();
         });
     </script>
 </body>
