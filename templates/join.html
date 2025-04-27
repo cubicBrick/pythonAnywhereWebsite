@@ -98,9 +98,11 @@
 
     <script>
         var socket = io();
-
+        let currclick = -1;
+        var yourTurn = false;
+        var gameId = null;
         function joinGame() {
-            var gameId = document.getElementById("game_id").value;
+            gameId = document.getElementById("game_id").value;
             socket.emit('join_game', { game_id: gameId });
             document.getElementById("status").innerText = "Trying to join... If you see this error for a long time: Check your game ID, make sure the host chose a board, or try again";
         }
@@ -125,7 +127,39 @@
             document.getElementById("img2").removeAttribute("hidden");
 
         });
-        let currclick = -1;
+        socket.on("played", function (data) {
+            if (data.player === "host") {
+                console.log("Host played card: " + data.card + " at (" + data.x + ", " + data.y + ")");
+                const cardsrc = `/static/assets/moons/${data.card}.png`;
+                const canvas = document.getElementById("gameBoardCanvas");
+                const ctx = canvas.getContext("2d");
+
+                // Get node pixel position
+                const node = clickableNodes.find(n => n.x === data.x && n.y === data.y);
+                if (!node) return;
+                clickableNodes.splice(clickableNodes.indexOf(node), 1);
+
+                const img = new Image();
+                img.src = cardsrc;
+
+                img.onload = function () {
+                    ctx.clearRect(node.px, node.py, node.size, node.size);
+                    ctx.drawImage(img, node.px, node.py, node.size, node.size); // match the node size
+                };
+                document.getElementById("status").innerHTML = "Your turn! Choose a card to play!";
+                yourTurn = true;
+            }
+        });
+        socket.on("change_card", function(data){
+            let newCard = data.card;
+            let pos = data.pos;
+            const cardsrc = `/static/assets/moons/${newCard}.png`;
+            document.getElementById(`img${pos}`).setAttribute("src", cardsrc);
+        })
+        socket.on("disconnected", function(data){
+            window.location.href = "/disconnected";
+        })
+
         function updateCards(first, second, third) {
             switch (first) {
                 case 0:
@@ -293,6 +327,8 @@
 
                 ctx.strokeRect(px, py, size, size);
                 ctx.fillRect(px, py, size, size);
+
+                clickableNodes.push({ x, y, px, py, size });
             });
             canvas.addEventListener("click", (e) => {
                 const mouseX = e.offsetX;
@@ -306,7 +342,7 @@
                 });
             });
         }
-        
+
         function handleNodeClick([x, y]) {
             console.log(`Clicked node at (${x}, ${y})`);
 
@@ -314,7 +350,7 @@
                 const cardId = currclick;
                 const cardImg = document.getElementById(`img${cardId}`);
 
-                const canvas = document.getElementById("main_game_board");
+                const canvas = document.getElementById("gameBoardCanvas");
                 const ctx = canvas.getContext("2d");
 
                 // Get node pixel position
@@ -340,7 +376,7 @@
                 // Inform server of card played
                 socket.emit("play_card", { game_id: gameId, x: x, y: y, card: cardId });
                 yourTurn = false;
-                document.getElementById("maintext").innerHTML = "Waiting for other player to do their turn...";
+                document.getElementById("status").innerHTML = "Waiting for other player to do their turn...";
             }
         }
 

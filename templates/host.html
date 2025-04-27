@@ -124,6 +124,39 @@
                 });
             }
         };
+        socket.on("played", function (data) {
+            if (data.player === "player") {
+                console.log("Player played card: " + data.card + " at (" + data.x + ", " + data.y + ")");
+                const cardsrc = `/static/assets/moons/${data.card}.png`;
+                const canvas = document.getElementById("main_game_board");
+                const ctx = canvas.getContext("2d");
+
+                // Get node pixel position
+                const node = clickableNodes.find(n => n.x === data.x && n.y === data.y);
+                if (!node) return;
+                clickableNodes.splice(clickableNodes.indexOf(node), 1);
+
+                const img = new Image();
+                img.src = cardsrc;
+
+                img.onload = function () {
+                    ctx.clearRect(node.px, node.py, node.size, node.size);
+                    ctx.drawImage(img, node.px, node.py, node.size, node.size); // match the node size
+                };
+                document.getElementById("maintext").innerHTML = "Your turn! Choose a card to play!";
+                yourTurn = true;
+            }
+        });
+
+        socket.on("change_card", function(data){
+            let newCard = data.card;
+            let pos = data.pos;
+            const cardsrc = `/static/assets/moons/${newCard}.png`;
+            document.getElementById(`img${pos}`).setAttribute("src", cardsrc);
+        })
+        socket.on("disconnected", function(data){
+            window.location.href = "/disconnected";
+        })
 
         function confirmBoard() {
             if (!selectedBoard) return;
@@ -344,7 +377,7 @@
             });
         }
         function handleNodeClick([x, y]) {
-            console.log(`Clicked node at (${x}, ${y})`);
+            console.log(`Clicked node at (${x}, ${y}) with card ${currclick}`);
 
             if (yourTurn && currclick !== -1) {
                 const cardId = currclick;

@@ -157,7 +157,7 @@ main h1 {
 
 main p {
     font-size: 1.1rem;
-    max-width: 1500px;
+    max-width: 800px;
 }
 
 /* ===== Homepage Fade-In Animation ===== */
@@ -168,7 +168,7 @@ main p {
 /* ===== Make Homepage Content Wider ===== */
 header, nav, main {
     width: 100%;
-    max-width: 1500px;
+    max-width: 2000px;
     margin: 0 auto;
 }
 

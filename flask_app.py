@@ -7,15 +7,38 @@ import os
 from flask import Flask, render_template, request, send_from_directory
 from flask_socketio import SocketIO, emit, join_room
 from colorama import Fore, Style
+from functools import wraps
 
-logging.basicConfig(filename="log.ansi")
+logging.basicConfig(filename="log.ansi", format="%(asctime)s - %(levelname)s: %(message)s", level=INFO)
 app = Flask(__name__)
 socketio = SocketIO(app)
-
+logging.getLogger('werkzeug').setLevel(logging.WARNING)
 CLEAR_ALL = Style.RESET_ALL
 
 games = {}  # Stores active game sessions
 
+# Save original socketio.on
+_original_on = socketio.on
+def auto_logging_on(event, *args, **kwargs):
+    def decorator(f):
+        @wraps(f)
+        def wrapped(*f_args, **f_kwargs):
+            app.logger.info(
+                Fore.CYAN + f"RECEIVE <- Event: {event}, Args: {f_args}, Kwargs: {f_kwargs}" + Style.RESET_ALL
+            )
+            return f(*f_args, **f_kwargs)
+        return _original_on(event, *args, **kwargs)(wrapped)
+    return decorator
+socketio.on = auto_logging_on
+_original_emit = socketio.emit
+def auto_logging_emit(event, *args, **kwargs):
+    app.logger.info(
+        Fore.MAGENTA + f"SEND    -> Event: {event}, Args: {args}, Kwargs: {kwargs}" + Style.RESET_ALL
+    )
+    return _original_emit(event, *args, **kwargs)
+socketio.emit = auto_logging_emit
+
+app.logger.info(Fore.YELLOW + "Flask app started" + Style.RESET_ALL)
 
 def load_boards(filename=os.path.join(app.root_path, "boards.txt")):
     """Reads board configurations from a file and parses them into a dictionary."""
@@ -75,10 +98,8 @@ def load_boards(filename=os.path.join(app.root_path, "boards.txt")):
 
     return game_boards
 
-
 # Load the boards at startup
 game_boards = load_boards()
-
 
 def generate_game_id():
     return "".join(random.choices(string.digits, k=6))
@@ -107,6 +128,10 @@ def host():
     return render_template(
         "host.html", game_id=game_id, boards=game_boards
     )
+
+@app.route("/disconnected")
+def disconnected():
+    return render_template("disconnected.html")
 
 @socketio.on("select_board")
 def select_board(data):
@@ -190,8 +215,83 @@ def join_game(data):
     else:
         emit("error", {"status": "error", "message": "Invalid or full game"})
 
-@socketio.on("play")
+# TODO: Add a function to handle the scoring keeping track of cards played where
+# SCORING: same type cards connected: 1 pt
+# SCORING: two cards whose numbers differ 4, mod 8 (example, 0 and 4): 2 pts
+# SCORING: chains of cards connected, where each card is one more than the previous one mod 8, (example, 5, 6, 7, 0, 1): 1 pt per card
+# SCORING: chains of cards connected, where each card is one less than the previous one mod 8, (example, 1, 0, 7, 6): 1 pt per card
+# SCORING IMPORTANT: One card may be part of many different scoring mechanisms
+# SCORING IMPORTANT: Count them all as long as they are different in some way (ex: chain goes different way)
+# SCORING VERY IMPORTANT: Do not count mechanisms that the newly placed card is not part of (ex: pair that does not contain the newly placed card)
+# KEEPING TRACK OF CARDS: List of cards with their coordinates (x, y) and the card number
+
+@socketio.on("play_card")
 def play_card(data):
-    pass
+    game_id = data.get("game_id")
+    if(game_id in games):
+        if request.sid == games[game_id]["host"]:
+            card = int(data.get("card"))
+            if card >= 0 and card < len(games[game_id]["cards_host"]):
+                oldcard = games[game_id]["cards_host"][card]
+                newCard = random.randint(0, 7)
+                games[game_id]["cards_host"][card] = newCard
+                emit("change_card", {"card": newCard, "pos": card}, room=games[game_id]["host"])
+                emit(
+                    "played",
+                    {
+                        "status": "good",
+                        "card": oldcard,
+                        "player": "host",
+                        "x" : data.get("x"),
+                        "y" : data.get("y"),
+                    },
+                    room=game_id,
+                )
+            else:
+                emit(
+                    "error",
+                    {"status": "error", "message": "Invalid card played"},
+                    room=request.sid,
+                )
+        elif request.sid == games[game_id]["player"]:
+            card = int(data.get("card"))
+            if card >= 0 and card < len(games[game_id]["cards_player"]):
+                oldcard = games[game_id]["cards_player"][card]
+                newCard = random.randint(0, 7)
+                games[game_id]["cards_player"][card] = newCard
+                emit("change_card", {"card": newCard, "pos": card}, room=games[game_id]["player"])
+                emit(
+                    "played",
+                    {
+                        "status": "good",
+                        "card": oldcard,
+                        "player": "player",
+                        "x" : data.get("x"),
+                        "y" : data.get("y"),
+                    },
+                    room=game_id,
+                )
+            else:
+                emit(
+                    "error",
+                    {"status": "error", "message": "Invalid card played"},
+                    room=request.sid,
+                )
+
+@socketio.on("disconnect")
+def handle_disconnect():
+    """Handles player disconnection."""
+    for game_id, game in games.items():
+        if request.sid == game["host"]:
+            app.logger.info(Fore.RED + f"{game_id} - Host disconnected" + Style.RESET_ALL)
+            emit("disconnected", {"status": "disconnected"}, room=game["player"])
+            del games[game_id]
+            break
+        elif request.sid == game["player"]:
+            app.logger.info(Fore.RED + f"{game_id} - Player disconnected" + Style.RESET_ALL)
+            emit("disconnected", {"status": "disconnected"}, room=game["host"])
+            del games[game_id]
+            break
+
 if __name__ == "__main__":
     socketio.run(app, debug=True)
