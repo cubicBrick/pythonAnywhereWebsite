@@ -1,39 +1,350 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Join Game</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
-    <link rel="stylesheet" href="/static/style.css"> <!-- Unified CSS -->
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .board-container {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .board-preview {
+            width: 100px;
+            height: 100px;
+            border: 3px solid black;
+            cursor: pointer;
+            transition: border 0.3s;
+        }
+
+        .board-preview.hover {
+            border: 3px solid yellowgreen;
+        }
+
+        .board-preview.selected {
+            border: 3px solid lime;
+        }
+
+        #game_id_container {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: grey;
+        }
+
+        #choose_button {
+            display: none;
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            background-color: #8be9fd;
+            color: #1e1e2e;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        #choose_button:hover {
+            background-color: #50fa7b;
+        }
+
+        img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        #hand_container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 50px;
+            width: 200px;
+            margin: auto;
+        }
+
+        #hand_container img {
+            height: 100%;
+            border: 2px solid white;
+            /* Rectangle border */
+            border-radius: 4px;
+            /* Optional: slightly rounded corners */
+            box-sizing: border-box;
+            background-color: black;
+            /* Optional: background to make border more visible */
+        }
+    </style>
 </head>
+
 <body>
     <div class="container">
         <h1 id="joingame">Join a Game</h1>
         <input type="text" id="game_id" placeholder="Enter Game ID">
         <button onclick="joinGame()" id="joinButton">Join</button>
         <p id="status"></p>
+        <canvas id="gameBoardCanvas" width="0" height="0"></canvas>
+        <div id="hand_container" style="height: 0px;width: 0px;">
+            <img hidden id="img0" src="/static/assets/moons/0.png">
+            <img hidden id="img1" src="/static/assets/moons/0.png">
+            <img hidden id="img2" src="/static/assets/moons/0.png">
+        </div>
     </div>
 
     <script>
         var socket = io();
-        
+
         function joinGame() {
             var gameId = document.getElementById("game_id").value;
-            socket.emit('join_game', {game_id: gameId});
+            socket.emit('join_game', { game_id: gameId });
             document.getElementById("status").innerText = "Trying to join... If you see this error for a long time: Check your game ID, make sure the host chose a board, or try again";
         }
 
-        socket.on('connected', function(data) {
-            // wait for start game
-        });
-
-        socket.on('start_game', function(data) {
+        socket.on('start_game', function (data) {
             document.getElementById("status").innerText = "Waiting for other player to do their turn...";
-            document.getElementById("joingame").remove();
             document.getElementById("game_id").remove();
             document.getElementById("joinButton").remove();
+
+            // Get the data for the board (nodes and connections)
+            var nodes = data.board.nodes;      // These will be an array of [x, y] pairs
+            var connections = data.board.connections;  // These will be an array of [[x1, y1], [x2, y2]] pairs
+
+            var canvas = document.getElementById("gameBoardCanvas");
+            drawLargeBoard(canvas, nodes, connections);  // Call the drawing function
         });
+        socket.on("update_cards", function (data) {
+            updateCards(data.first, data.second, data.third);
+            document.getElementById("hand_container").setAttribute("style", "height: 50px; width: 200px; margin: auto; flex");
+            document.getElementById("img0").removeAttribute("hidden");
+            document.getElementById("img1").removeAttribute("hidden");
+            document.getElementById("img2").removeAttribute("hidden");
+
+        });
+        let currclick = -1;
+        function updateCards(first, second, third) {
+            switch (first) {
+                case 0:
+                    document.getElementById("img0").setAttribute("src", "/static/assets/moons/0.png");
+                    break;
+                case 1:
+                    document.getElementById("img0").setAttribute("src", "/static/assets/moons/1.png");
+                    break;
+                case 2:
+                    document.getElementById("img0").setAttribute("src", "/static/assets/moons/2.png");
+                    break;
+                case 3:
+                    document.getElementById("img0").setAttribute("src", "/static/assets/moons/3.png");
+                    break;
+                case 4:
+                    document.getElementById("img0").setAttribute("src", "/static/assets/moons/4.png");
+                    break;
+                case 5:
+                    document.getElementById("img0").setAttribute("src", "/static/assets/moons/5.png");
+                    break;
+                case 6:
+                    document.getElementById("img0").setAttribute("src", "/static/assets/moons/6.png");
+                    break;
+                case 7:
+                    document.getElementById("img0").setAttribute("src", "/static/assets/moons/7.png");
+                    break;
+                default:
+                    break;
+            }
+            switch (second) {
+                case 0:
+                    document.getElementById("img1").setAttribute("src", "/static/assets/moons/0.png");
+                    break;
+                case 1:
+                    document.getElementById("img1").setAttribute("src", "/static/assets/moons/1.png");
+                    break;
+                case 2:
+                    document.getElementById("img1").setAttribute("src", "/static/assets/moons/2.png");
+                    break;
+                case 3:
+                    document.getElementById("img1").setAttribute("src", "/static/assets/moons/3.png");
+                    break;
+                case 4:
+                    document.getElementById("img1").setAttribute("src", "/static/assets/moons/4.png");
+                    break;
+                case 5:
+                    document.getElementById("img1").setAttribute("src", "/static/assets/moons/5.png");
+                    break;
+                case 6:
+                    document.getElementById("img1").setAttribute("src", "/static/assets/moons/6.png");
+                    break;
+                case 7:
+                    document.getElementById("img1").setAttribute("src", "/static/assets/moons/7.png");
+                    break;
+                default:
+                    break;
+            }
+            switch (third) {
+                case 0:
+                    document.getElementById("img2").setAttribute("src", "/static/assets/moons/0.png");
+                    break;
+                case 1:
+                    document.getElementById("img2").setAttribute("src", "/static/assets/moons/1.png");
+                    break;
+                case 2:
+                    document.getElementById("img2").setAttribute("src", "/static/assets/moons/2.png");
+                    break;
+                case 3:
+                    document.getElementById("img2").setAttribute("src", "/static/assets/moons/3.png");
+                    break;
+                case 4:
+                    document.getElementById("img2").setAttribute("src", "/static/assets/moons/4.png");
+                    break;
+                case 5:
+                    document.getElementById("img2").setAttribute("src", "/static/assets/moons/5.png");
+                    break;
+                case 6:
+                    document.getElementById("img2").setAttribute("src", "/static/assets/moons/6.png");
+                    break;
+                case 7:
+                    document.getElementById("img2").setAttribute("src", "/static/assets/moons/7.png");
+                    break;
+                default:
+                    break;
+            }
+
+            document.getElementById("img0").addEventListener("click", function () {
+                if (currclick === 0) {
+                    currclick = -1;
+                    document.getElementById("img0").style.border = "2px solid white";
+                    document.getElementById("img1").style.border = "2px solid white";
+                    document.getElementById("img2").style.border = "2px solid white";
+                } else {
+                    currclick = 0;
+                    document.getElementById("img0").style.border = "2px solid green";
+                    document.getElementById("img1").style.border = "2px solid white";
+                    document.getElementById("img2").style.border = "2px solid white";
+                }
+            });
+
+            document.getElementById("img1").addEventListener("click", function () {
+                if (currclick === 1) {
+                    currclick = -1;
+                    document.getElementById("img0").style.border = "2px solid white";
+                    document.getElementById("img1").style.border = "2px solid white";
+                    document.getElementById("img2").style.border = "2px solid white";
+                } else {
+                    currclick = 1;
+                    document.getElementById("img0").style.border = "2px solid white";
+                    document.getElementById("img1").style.border = "2px solid green";
+                    document.getElementById("img2").style.border = "2px solid white";
+                }
+            });
+
+            document.getElementById("img2").addEventListener("click", function () {
+                if (currclick === 2) {
+                    currclick = -1;
+                    document.getElementById("img0").style.border = "2px solid white";
+                    document.getElementById("img1").style.border = "2px solid white";
+                    document.getElementById("img2").style.border = "2px solid white";
+                } else {
+                    currclick = 2;
+                    document.getElementById("img0").style.border = "2px solid white";
+                    document.getElementById("img1").style.border = "2px solid white";
+                    document.getElementById("img2").style.border = "2px solid green";
+                }
+            });
+
+        }
+        let clickableNodes = [];
+        function drawLargeBoard(canvas, nodes, connections) {
+            const scale = 2.75;
+            const cellSize = 30;
+            const nodeSize = 20;
+            const offset = 10 + 5 / scale;
+
+            const width = scale * 5 * cellSize;
+            const height = scale * 5 * cellSize;
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#282a36";
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw connections
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 5;
+            connections.forEach(([[x1, y1], [x2, y2]]) => {
+                ctx.beginPath();
+                ctx.moveTo(scale * (x1 * cellSize + offset), scale * (y1 * cellSize + offset));
+                ctx.lineTo(scale * (x2 * cellSize + offset), scale * (y2 * cellSize + offset));
+                ctx.stroke();
+            });
+
+            // Draw nodes
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 5;
+            ctx.fillStyle = "#282a36";
+            nodes.forEach(([x, y]) => {
+                const px = scale * x * cellSize + 5;
+                const py = scale * y * cellSize + 5;
+                const size = scale * nodeSize;
+
+                ctx.strokeRect(px, py, size, size);
+                ctx.fillRect(px, py, size, size);
+            });
+            canvas.addEventListener("click", (e) => {
+                const mouseX = e.offsetX;
+                const mouseY = e.offsetY;
+
+                clickableNodes.forEach(({ x, y, px, py, size }) => {
+                    // Check if the click is within the node's bounding box
+                    if (mouseX >= px && mouseX <= px + size && mouseY >= py && mouseY <= py + size) {
+                        handleNodeClick([x, y]);
+                    }
+                });
+            });
+        }
+        
+        function handleNodeClick([x, y]) {
+            console.log(`Clicked node at (${x}, ${y})`);
+
+            if (yourTurn && currclick !== -1) {
+                const cardId = currclick;
+                const cardImg = document.getElementById(`img${cardId}`);
+
+                const canvas = document.getElementById("main_game_board");
+                const ctx = canvas.getContext("2d");
+
+                // Get node pixel position
+                const node = clickableNodes.find(n => n.x === x && n.y === y);
+                if (!node) return;
+                clickableNodes.splice(clickableNodes.indexOf(node), 1);
+
+                // Draw the image onto the canvas
+                const img = new Image();
+                img.src = cardImg.src;
+
+                img.onload = function () {
+                    ctx.clearRect(node.px, node.py, node.size, node.size);
+                    ctx.drawImage(img, node.px, node.py, node.size, node.size); // match the node size
+                };
+
+                // Reset selection state
+                currclick = -1;
+                document.getElementById("img0").style.border = "2px solid white";
+                document.getElementById("img1").style.border = "2px solid white";
+                document.getElementById("img2").style.border = "2px solid white";
+
+                // Inform server of card played
+                socket.emit("play_card", { game_id: gameId, x: x, y: y, card: cardId });
+                yourTurn = false;
+                document.getElementById("maintext").innerHTML = "Waiting for other player to do their turn...";
+            }
+        }
+
     </script>
 </body>
+
 </html>

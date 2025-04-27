@@ -83,11 +83,13 @@ game_boards = load_boards()
 def generate_game_id():
     return "".join(random.choices(string.digits, k=6))
 
-
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return render_template("home.html")
 
+@app.route("/moon")
+def moon():
+    return render_template("index.html")
 
 @app.route("/favicon.ico")
 def favicon():
@@ -97,7 +99,6 @@ def favicon():
         mimetype="image/vnd.microsoft.icon",
     )
 
-
 @app.route("/host")
 def host():
     """Generate game ID but do not send it to the frontend until board is chosen."""
@@ -105,8 +106,7 @@ def host():
     games[game_id] = {"host": request.remote_addr, "player": None, "board": None}
     return render_template(
         "host.html", game_id=game_id, boards=game_boards
-    )  # Game ID is greyed out
-
+    )
 
 @socketio.on("select_board")
 def select_board(data):
@@ -137,11 +137,9 @@ def select_board(data):
             {"status": "error", "message": "Game not found or board already chosen"},
         )
 
-
 @app.route("/join")
 def join_page():
     return render_template("join.html")
-
 
 @socketio.on("join_game")
 def join_game(data):
@@ -157,34 +155,43 @@ def join_game(data):
         join_room(game_id)
         app.logger.info(Fore.GREEN + f"{game_id} - Player joined game" + Style.RESET_ALL)
         emit("connected", {"status": "connected"}, room=game_id)
-        emit("start_game", {"status": "start"}, room=game_id)
+
+        # Get the board data for the game
+        board_data = games[game_id]["board"]
+
+        # Send start_game along with board data
+        emit("start_game", {"status": "start", "board": board_data}, room=game_id)
+        
         for _ in range(3):
             games[game_id]["cards_host"].append(random.randint(0, 7))
-        app.logger.info(f"{game_id} - Host got cards: {games[game_id]["cards_host"]}")
+        app.logger.info(f"{game_id} - Host got cards: {games[game_id]['cards_host']}")
         emit(
             "update_cards",
             {
-                "0": games[game_id]["cards_host"][0],
-                "1": games[game_id]["cards_host"][1],
-                "2": games[game_id]["cards_host"][2],
+                "first": games[game_id]["cards_host"][0],
+                "second": games[game_id]["cards_host"][1],
+                "third": games[game_id]["cards_host"][2],
             },
-            room=request.sid
+            room=games[game_id]["host"]
         )
+        
         for _ in range(3):
             games[game_id]["cards_player"].append(random.randint(0, 7))
-        app.logger.info(f"{game_id} - Player got cards: {games[game_id]["cards_player"]}")
+        app.logger.info(f"{game_id} - Player got cards: {games[game_id]['cards_player']}")
         emit(
             "update_cards",
             {
-                "0": games[game_id]["cards_player"][0],
-                "1": games[game_id]["cards_player"][1],
-                "2": games[game_id]["cards_player"][2],
+                "first": games[game_id]["cards_player"][0],
+                "second": games[game_id]["cards_player"][1],
+                "third": games[game_id]["cards_player"][2],
             },
-            room=request.sid
+            room=games[game_id]["player"]
         )
     else:
         emit("error", {"status": "error", "message": "Invalid or full game"})
 
-
+@socketio.on("play")
+def play_card(data):
+    pass
 if __name__ == "__main__":
     socketio.run(app, debug=True)

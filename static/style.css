@@ -81,16 +81,103 @@ button:hover {
     background-color: #50fa7b; /* Green on hover */
 }
 
-/* Status message */
-#status {
-    margin-top: 1rem;
-    font-size: 1rem;
-    font-weight: 400;
-    color: #f1fa8c; /* Yellow */
-}
-
 /* Fade-in animation */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* ===== Additions for Homepage ===== */
+
+/* Layout for homepage */
+body.homepage {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Header styling */
+header {
+    background-color: #282a36;
+    text-align: center;
+    padding: 2rem 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Header title */
+header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Header subtitle */
+header p {
+    font-size: 1.2rem;
+    color: #8be9fd;
+}
+
+/* Navigation bar */
+nav {
+    background-color: #44475a;
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    padding: 1rem;
+    padding-right: 10px;
+    padding-left: 10px;
+}
+
+nav a {
+    color: #f8f8f2;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+nav a:hover {
+    color: #50fa7b;
+}
+
+/* Main content area */
+main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+}
+
+main h1 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+main p {
+    font-size: 1.1rem;
+    max-width: 1500px;
+}
+
+/* ===== Homepage Fade-In Animation ===== */
+.homepage {
+    animation: fadeIn 0.8s ease-in-out;
+}
+
+/* ===== Make Homepage Content Wider ===== */
+header, nav, main {
+    width: 100%;
+    max-width: 1500px;
+    margin: 0 auto;
+}
+
+/* Tweak padding for better spacing */
+header, nav {
+    padding-left: 2rem;
+    padding-right: 2rem;
+}
+
+main {
+    padding: 3rem 2rem;
 }

@@ -5,10 +5,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>xhxp</title>
-    <link rel="stylesheet" href="/static/main.css"> <!-- Link the CSS file -->
+    <link rel="stylesheet" href="/static/style.css"> <!-- Link the CSS file -->
 </head>
 <body>
-    <a href="/host">Host a Game</a>
-    <a href="/join">Join a Game</a>
+    <div class="container">
+        <h1>Welcome to the Moon Game</h1>
+        <p>A copy of the Google Doodle</p>
+        <div class="button-group">
+            <form action="/host" method="get">
+                <button type="submit">Host a Game</button>
+            </form>
+            <form action="/join" method="get" style="margin-top: 10px;">
+                <button type="submit">Join a Game</button>
+            </form>
+        </div>
+    </div>
 </body>
 </html>
