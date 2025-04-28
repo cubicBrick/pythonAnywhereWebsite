@@ -79,6 +79,33 @@
             background-color: black;
             /* Optional: background to make border more visible */
         }
+
+        /* Animation for score change */
+        .score-popup {
+            position: absolute;
+            color: lime;
+            font-weight: bold;
+            font-size: 1.2rem;
+            animation: riseAndFade 1s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes riseAndFade {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+        }
+
+        /* Make sure the parent div is relative for absolute positioning */
+        .container {
+            position: relative;
+        }
     </style>
 </head>
 
@@ -88,12 +115,20 @@
         <input type="text" id="game_id" placeholder="Enter Game ID">
         <button onclick="joinGame()" id="joinButton">Join</button>
         <p id="status"></p>
-        <canvas id="gameBoardCanvas" width="0" height="0"></canvas>
+        <div style="display: flex; justify-content: space-between; width: 100%;">
+            <p id="you" style="margin: 0;" hidden>You: 0</p>
+            <p id="opponent" style="margin: 0;" hidden>Opponent: 0</p>
+        </div>
+        <div style="margin: auto;">
+            <canvas id="gameBoardCanvas" style="display: block; margin-top: 20px" width="0" height="0"></canvas>
+        </div>
         <div id="hand_container" style="height: 0px;width: 0px;">
             <img hidden id="img0" src="/static/assets/moons/0.png">
             <img hidden id="img1" src="/static/assets/moons/0.png">
             <img hidden id="img2" src="/static/assets/moons/0.png">
         </div>
+        <br>
+        <button id="playAgain" onclick="window.location.href = '/moon';" hidden>Play again</button>
     </div>
 
     <script>
@@ -111,6 +146,8 @@
             document.getElementById("status").innerText = "Waiting for other player to do their turn...";
             document.getElementById("game_id").remove();
             document.getElementById("joinButton").remove();
+            document.getElementById("you").removeAttribute("hidden");
+            document.getElementById("opponent").removeAttribute("hidden");
 
             // Get the data for the board (nodes and connections)
             var nodes = data.board.nodes;      // These will be an array of [x, y] pairs
@@ -150,15 +187,77 @@
                 yourTurn = true;
             }
         });
-        socket.on("change_card", function(data){
+        socket.on("change_card", function (data) {
             let newCard = data.card;
             let pos = data.pos;
             const cardsrc = `/static/assets/moons/${newCard}.png`;
             document.getElementById(`img${pos}`).setAttribute("src", cardsrc);
         })
-        socket.on("disconnected", function(data){
+        socket.on("disconnected", function (data) {
             window.location.href = "/disconnected";
         })
+        socket.on("score_update", function (data) {
+            console.log("Score update: " + data.player + " - " + data.total_score);
+            let targetId = (data.player === "host") ? "opponent" : "you";
+            document.getElementById(targetId).innerHTML = (data.player === "host" ? "Opponent: " : "You: ") + data.total_score;
+            if (data.total_score === 0) {
+                return;
+            }
+            // Create the popup
+            const popup = document.createElement("div");
+            popup.classList.add("score-popup");
+            popup.innerText = `+${data.score_this_move}`;
+
+            // Find where to place it (above the score)
+            const scoreElement = document.getElementById(targetId);
+            const rect = scoreElement.getBoundingClientRect();
+            const containerRect = document.querySelector('.container').getBoundingClientRect();
+
+            popup.style.left = (rect.left - containerRect.left + rect.width / 2 - 10) + "px";
+            popup.style.top = (rect.top - containerRect.top - 10) + "px";
+
+            document.querySelector('.container').appendChild(popup);
+
+            // Remove after animation
+            setTimeout(() => {
+                popup.remove();
+            }, 1000);
+        });
+        socket.on("ownership_update", function (data) {
+            const ownership = data.ownership;
+            const canvas = document.getElementById("gameBoardCanvas");
+            const ctx = canvas.getContext("2d");
+
+            ownership.forEach(({ x, y, owner }) => {
+                const scale = 2.75;
+                const cellSize = 30;
+                const nodeSize = 20;
+                const px = scale * x * cellSize + 5;
+                const py = scale * y * cellSize + 5;
+                const size = scale * nodeSize;
+
+                if (owner === 0) {
+                    ctx.strokeStyle = "red";
+                } else if (owner === 1) {
+                    ctx.strokeStyle = "lime";
+                } else {
+                    ctx.strokeStyle = "white";
+                }
+                ctx.lineWidth = 2;
+
+                ctx.strokeRect(px, py, size, size);
+            });
+        });
+        socket.on("game_over", function (data) {
+            const winner = data.winner;
+            const score = data.score;
+            const message = winner === "host" ? "You lost!" : (winner === "player" ? "You won!" : "It's a draw!");
+            document.getElementById("status").innerText = message;
+            document.getElementById("you").remove();
+            document.getElementById("opponent").remove();
+            document.getElementById("hand_container").remove();
+            document.getElementById("playAgain").removeAttribute("hidden");
+        });
 
         function updateCards(first, second, third) {
             switch (first) {

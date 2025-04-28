@@ -79,6 +79,33 @@
             background-color: black;
             /* Optional: background to make border more visible */
         }
+
+        /* Animation for score change */
+        .score-popup {
+            position: absolute;
+            color: lime;
+            font-weight: bold;
+            font-size: 1.2rem;
+            animation: riseAndFade 1s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes riseAndFade {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+        }
+
+        /* Make sure the parent div is relative for absolute positioning */
+        .container {
+            position: relative;
+        }
     </style>
 </head>
 
@@ -93,6 +120,10 @@
         </div>
         <button id="choose_button" onclick="confirmBoard()">Choose</button>
         <p id="game_id_container">Game ID: <span id="game_id">{{ game_id }}</span></p>
+        <div style="display: flex; justify-content: space-between; width: 100%;">
+            <p id="you" style="margin: 0;" hidden>You: 0</p>
+            <p id="opponent" style="margin: 0;" hidden>Opponent: 0</p>
+        </div>
         <div style="margin: auto;">
             <canvas id="main_game_board" style="display:none; margin-top: 20px;"></canvas>
         </div>
@@ -101,6 +132,8 @@
             <img hidden id="img1" src="/static/assets/moons/0.png">
             <img hidden id="img2" src="/static/assets/moons/0.png">
         </div>
+        <br>
+        <button id="playAgain" onclick="window.location.href = '/moon';" hidden>Play again</button>
 
     </div>
 
@@ -148,46 +181,109 @@
             }
         });
 
-        socket.on("change_card", function(data){
+        socket.on("change_card", function (data) {
             let newCard = data.card;
             let pos = data.pos;
             const cardsrc = `/static/assets/moons/${newCard}.png`;
             document.getElementById(`img${pos}`).setAttribute("src", cardsrc);
         })
-        socket.on("disconnected", function(data){
+        socket.on("disconnected", function (data) {
             window.location.href = "/disconnected";
         })
+        socket.on("score_update", function (data) {
+            console.log("Score update: " + data.player + " - " + data.total_score);
+            let targetId = (data.player === "player") ? "opponent" : "you";
+            document.getElementById(targetId).innerHTML = (data.player === "player" ? "Opponent: " : "You: ") + data.total_score;
+            if (data.total_score === 0) {
+                return;
+            }
+            // Create the popup
+            const popup = document.createElement("div");
+            popup.classList.add("score-popup");
+            popup.innerText = `+${data.score_this_move}`;
 
+            // Find where to place it (above the score)
+            const scoreElement = document.getElementById(targetId);
+            const rect = scoreElement.getBoundingClientRect();
+            const containerRect = document.querySelector('.container').getBoundingClientRect();
+
+            popup.style.left = (rect.left - containerRect.left + rect.width / 2 - 10) + "px";
+            popup.style.top = (rect.top - containerRect.top - 10) + "px";
+
+            document.querySelector('.container').appendChild(popup);
+
+            // Remove after animation
+            setTimeout(() => {
+                popup.remove();
+            }, 1000);
+        });
+        socket.on("board_selected", function (data) {
+            document.getElementById("board_selection").style.display = "none";
+            document.getElementById("choose_button").style.display = "none";
+            document.getElementById("game_id_container").style.color = "white";
+            document.getElementById("maintext").innerHTML = "Waiting for another player...";
+        });
+        socket.on("ownership_update", function (data) {
+            const ownership = data.ownership;
+            const canvas = document.getElementById("main_game_board");
+            const ctx = canvas.getContext("2d");
+
+            ownership.forEach(({ x, y, owner }) => {
+                const scale = 2.75;
+                const cellSize = 30;
+                const nodeSize = 20;
+                const px = scale * x * cellSize + 5;
+                const py = scale * y * cellSize + 5;
+                const size = scale * nodeSize;
+
+                if (owner === 0) {
+                    ctx.strokeStyle = "lime";
+                } else if (owner === 1) {
+                    ctx.strokeStyle = "red";
+                } else {
+                    ctx.strokeStyle = "white";
+                }
+                ctx.lineWidth = 2;
+
+                ctx.strokeRect(px, py, size, size);
+            });
+        });
+        socket.on("game_over", function (data) {
+            const winner = data.winner;
+            const score = data.score;
+            const message = winner === "player" ? "You lost!" : (winner === "host" ? "You won!" : "It's a draw!");
+            document.getElementById("maintext").innerText = message;
+            document.getElementById("you").remove();
+            document.getElementById("opponent").remove();
+            document.getElementById("hand_container").remove();
+            document.getElementById("playAgain").removeAttribute("hidden");
+        }); 
+
+
+
+        socket.on("connected", function (data) {
+            document.getElementById("maintext").innerHTML = "Your turn!";
+            document.getElementById("game_id_container").innerHTML = "";
+
+            const boardData = boards[selectedBoard.id];
+            const canvas = document.getElementById("main_game_board");
+            canvas.style.display = "block";
+            drawLargeBoard(canvas, boardData.nodes, boardData.connections);
+            document.getElementById("you").removeAttribute("hidden");
+            document.getElementById("opponent").removeAttribute("hidden");
+        });
+        socket.on("update_cards", function (data) {
+            updateCards(data.first, data.second, data.third);
+            document.getElementById("hand_container").setAttribute("style", "height: 50px; width: 200px; margin: auto;");
+            document.getElementById("img0").removeAttribute("hidden");
+            document.getElementById("img1").removeAttribute("hidden");
+            document.getElementById("img2").removeAttribute("hidden");
+
+        });
         function confirmBoard() {
             if (!selectedBoard) return;
             var boardName = selectedBoard.id;
             socket.emit("select_board", { game_id: gameId, board: boardName });
-
-            socket.on("board_selected", function (data) {
-                document.getElementById("board_selection").style.display = "none";
-                document.getElementById("choose_button").style.display = "none";
-                document.getElementById("game_id_container").style.color = "white";
-                document.getElementById("maintext").innerHTML = "Waiting for another player...";
-            });
-
-            socket.on("connected", function (data) {
-                document.getElementById("maintext").innerHTML = "Your turn!";
-                document.getElementById("game_id_container").innerHTML = "";
-
-                const boardData = boards[selectedBoard.id];
-                const canvas = document.getElementById("main_game_board");
-                canvas.style.display = "block";
-                drawLargeBoard(canvas, boardData.nodes, boardData.connections);
-
-            });
-            socket.on("update_cards", function (data) {
-                updateCards(data.first, data.second, data.third);
-                document.getElementById("hand_container").setAttribute("style", "height: 50px; width: 200px; margin: auto;");
-                document.getElementById("img0").removeAttribute("hidden");
-                document.getElementById("img1").removeAttribute("hidden");
-                document.getElementById("img2").removeAttribute("hidden");
-
-            });
         }
         let currclick = -1;
         function updateCards(first, second, third) {
