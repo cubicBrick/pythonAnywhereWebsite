@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Management</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #1e1f29;
+      color: #fff;
+      padding: 2rem;
+    }
+
+    .form-container,
+    .user-table {
+      background: #282a36;
+      padding: 1.5rem;
+      border-radius: 10px;
+      margin-bottom: 2rem;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+      max-width: 600px;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 0.5rem;
+      margin-bottom: 0.75rem;
+      border-radius: 6px;
+      border: none;
+      background-color: #44475a;
+      color: white;
+    }
+
+    button {
+      padding: 0.5rem 1rem;
+      background-color: #6272a4;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-right: 0.5rem;
+    }
+
+    .permissions-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .permission-option {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .user-table table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .user-table th,
+    .user-table td {
+      border: 1px solid #44475a;
+      padding: 0.75rem;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background-color: #282a36;
+      padding: 2rem;
+      border-radius: 10px;
+      width: 400px;
+    }
+
+    .modal button {
+      background-color: #6272a4;
+      width: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <div class="form-container">
+      <h2>Add User</h2>
+      <form method="POST" action="/manage_user" onsubmit="return confirmAction(event, this)">
+        <input type="hidden" name="action" value="add" />
+        <input type="text" name="username" placeholder="Username" required />
+        <input type="password" name="password" placeholder="Password" required />
+        <div class="permissions-container">
+          {% set sensitive_permissions = ['ADMINISTRATOR', 'MODIFY_USERS'] %}
+          {% for perm_name, perm_value in permissions.items() %}
+          <label class="permission-option">
+            <input type="checkbox" name="permissions" value="{{ perm_value }}" data-bit="{{ perm_value }}"
+              onclick="handlePermissionClick(this)" {% if not is_admin and perm_name in sensitive_permissions
+              %}disabled{% endif %}>
+            <span
+              title="{% if not is_admin and perm_name in sensitive_permissions %}Only admins can modify this{% endif %}">
+              {{ perm_name }}
+            </span>
+          </label>
+          {% endfor %}
+        </div>
+        <button type="submit">Add User</button>
+      </form>
+    </div>
+
+    <div class="user-table">
+      <h2>Existing Users</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Permissions</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="userTableBody"></tbody>
+      </table>
+    </div>
+
+    <div class="form-container hidden" id="editFormContainer">
+      <h2>Edit User</h2>
+      <form id="editUserForm" method="POST">
+        <input type="hidden" name="action" value="edit" />
+        <input type="hidden" name="username" id="editUsername" />
+        <div class="permissions-container" id="editPermissionsContainer"></div>
+        <button type="submit">Update</button>
+        <button type="button" id="cancelEditButton">Cancel</button>
+      </form>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal" id="confirmModal">
+      <div class="modal-content">
+        <h3 id="actionDescription">Are you sure you want to perform this action?</h3>
+        <button onclick="confirmYes()">Yes</button>
+        <div style="height: 10px;"></div>
+        <button onclick="confirmNo()">No</button>
+      </div>
+    </div>
+  </main>
+  <script>
+    const allPermissions = {{ permissions | tojson }};
+    const isAdmin = {{ is_admin | tojson }};
+    const sensitiveBits = [{{ permissions['ADMINISTRATOR'] }}, {{ permissions['MODIFY_USERS'] }}];
+
+    let formToSubmit = null;
+    let actionDescription = "";
+
+    function handlePermissionClick(clicked) {
+      const clickedVal = parseInt(clicked.value);
+      const checkboxes = clicked.closest('.permissions-container').querySelectorAll('input[type="checkbox"]');
+
+      if (!clicked.checked) {
+        for (let sensitive of sensitiveBits) {
+          if ((sensitive & clickedVal) === clickedVal) {
+            const sensitiveBox = [...checkboxes].find(cb => parseInt(cb.value) === sensitive);
+            if (sensitiveBox && sensitiveBox.checked && sensitiveBox.disabled) {
+              alert("This permission is required by a protected role and cannot be removed.");
+              clicked.checked = true;
+              return;
+            }
+          }
+        }
+
+        checkboxes.forEach(cb => {
+          const val = parseInt(cb.value);
+          if ((val & clickedVal) === clickedVal && val !== clickedVal) cb.checked = false;
+        });
+      } else {
+        checkboxes.forEach(cb => {
+          const val = parseInt(cb.value);
+          if ((clickedVal & val) === val) cb.checked = true;
+        });
+      }
+    }
+
+    function confirmAction(event, form) {
+      event.preventDefault();
+      formToSubmit = form;
+
+      const action = form.querySelector('[name="action"]').value;
+      const username = form.querySelector('[name="username"]').value;
+      const permissions = Array.from(form.querySelectorAll('[name="permissions"]:checked'))
+        .map(checkbox => checkbox.nextElementSibling.textContent);
+
+      actionDescription = `Are you sure you want to ${action.toUpperCase()} a user with username "${username}" that has permissions ${permissions.join(', ')}?`;
+      document.getElementById('actionDescription').textContent = actionDescription;
+      
+      document.getElementById('confirmModal').style.display = 'flex';
+    }
+
+    function confirmYes() {
+      formToSubmit.submit();
+      closeModal();
+    }
+
+    function confirmNo() {
+      closeModal();
+    }
+
+    function closeModal() {
+      document.getElementById('confirmModal').style.display = 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const userTableBody = document.getElementById('userTableBody');
+      const editFormContainer = document.getElementById('editFormContainer');
+      const editUserForm = document.getElementById('editUserForm');
+      const editPermissionsContainer = document.getElementById('editPermissionsContainer');
+      const cancelEditButton = document.getElementById('cancelEditButton');
+      const editUsernameInput = document.getElementById('editUsername');
+
+      const fetchUsers = async () => {
+        const res = await fetch('/get_users');
+        const users = await res.json();
+        userTableBody.innerHTML = '';
+
+        users.forEach(user => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${user.username}</td>
+            <td>${user.permissions.join(', ')}</td>
+            <td>
+              <button class="edit-btn" data-username="${user.username}" data-perms="${user.permissions.join(',')}" style="width: 100%; margin-right: 10px; margin-bottom: 10px;">Edit</button>
+              <br>
+              <form method="POST" action="/manage_user" style="display:inline;" onsubmit="return confirmAction(event, this)">
+                <input type="hidden" name="action"" value="delete">
+                <input type="hidden" name="username" value="${user.username}">
+                <button type="submit" style="background-color: rgb(148, 38, 38); width: 100%; margin-right: 10px;">Delete</button>
+              </form>
+            </td>`;
+          userTableBody.appendChild(row);
+        });
+
+        document.querySelectorAll('.edit-btn').forEach(button => {
+          button.addEventListener('click', () => {
+            const username = button.dataset.username;
+            const perms = button.dataset.perms.split(',');
+            editUsernameInput.value = username;
+            editPermissionsContainer.innerHTML = '';
+
+            Object.entries(allPermissions).forEach(([name, val]) => {
+              const checked = perms.includes(name);
+              const isSensitive = name === "ADMINISTRATOR" || name === "MODIFY_USERS";
+              const disabled = !isAdmin && isSensitive;
+              const label = document.createElement('label');
+              label.className = 'permission-option';
+              label.innerHTML = `
+                <input type="checkbox" name="permissions" value="${val}" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} data-bit="${val}" onclick="handlePermissionClick(this)">
+                <span title="${disabled ? 'Only admins can modify this' : ''}">${name}</span>`;
+              editPermissionsContainer.appendChild(label);
+            });
+
+            editFormContainer.classList.remove('hidden');
+          });
+        });
+      };
+
+      fetchUsers();
+
+      editUserForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(editUserForm);
+        const res = await fetch('/manage_user', { method: 'POST', body: formData });
+        const text = await res.text();
+        if (res.ok) {
+          alert("User updated.");
+          editFormContainer.classList.add('hidden');
+          fetchUsers();
+        } else alert("Error: " + text);
+      });
+
+      cancelEditButton.addEventListener('click', () => {
+        editFormContainer.classList.add('hidden');
+      });
+    });
+  </script>
+</body>
+
+</html>

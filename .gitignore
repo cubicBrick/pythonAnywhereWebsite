@@ -1,3 +1,7 @@
 log.ansi
 .env
 .venv/
+*.ansi
+*.db
+instance
+__pycache__

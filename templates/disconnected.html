@@ -8,6 +8,11 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+    <script>
+        var isAuthenticated = {{ current_user.is_authenticated|tojson }};
+    </script>
+    <div id="nav-placeholder"></div> 
+    <main>>
     <div class="container">
         <h1>You've been sent here because your opponent has disconnected</h1>
         <p>Play again?</p>
@@ -20,5 +25,7 @@
             </form>
         </div>
     </div>
+    </main>
+    <script src="/static/loadnav.js"></script>
 </body>
 </html>

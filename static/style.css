@@ -1,6 +1,3 @@
-/* Import Google Font */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
-
 /* General Reset */
 body, h1, p, input, button {
     margin: 0;
@@ -9,45 +6,116 @@ body, h1, p, input, button {
     box-sizing: border-box;
 }
 
-/* Center content */
-body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+/* Prevent horizontal scrolling */
+html, body {
+    overflow-x: hidden; /* Disable horizontal scroll */
+    width: 100%; /* Ensure the body stays within screen width */
+    height: 100%; /* Ensure full height for the body */
     background-color: #1e1e2e; /* Dark theme */
     color: #fff;
 }
 
-/* Main container for host & join pages */
+/* Adjust for nav height */
+body.with-fixed-nav {
+    padding-top: 160px; /* Adjust for combined header + nav height */
+}
+
+/* Header Styling */
+header {
+    background-color: #282a36;
+    text-align: center;
+    padding: 2rem 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    position: relative; /* Keep header scrollable */
+}
+
+header h1 {
+    font-size: 2.5rem;
+    margin: 0;
+    color: #8be9fd; /* Light blue */
+}
+
+/* Navigation bar Styling */
+nav {
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: #44475a;
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    padding: 1rem 2rem;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+nav a {
+    color: #f8f8f2;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+nav a:hover {
+    color: #50fa7b; /* Green on hover */
+}
+
+#nav-placeholder {
+    width: 100%;
+}
+
+/* Main content area */
+main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem;
+    text-align: center;
+}
+
+main h1 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+main p {
+    font-size: 1.1rem;
+    max-width: 800px;
+}
+
+/* Center content on login page */
+body.loginpage {
+    margin: 0;
+    background-color: #1e1e2e;
+    color: white;
+}
+
+body.loginpage .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: calc(100vh - 80px); /* Subtract nav height */
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 2rem;
+    background: #282a36;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Container for general content */
 .container {
     text-align: center;
     background: #282a36; /* Slightly darker card */
     padding: 2rem;
     border-radius: 12px;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     max-width: 400px;
     width: 90%;
     animation: fadeIn 0.5s ease-in-out;
-}
-
-/* Heading */
-h1 {
-    font-size: 1.8rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-}
-
-/* Game ID Styling */
-#game_id {
-    font-weight: 600;
-    color: #8be9fd; /* Light blue */
-}
-
-/* Paragraph text */
-p {
-    font-size: 1rem;
-    margin-bottom: 1rem;
 }
 
 /* Input field */
@@ -64,7 +132,7 @@ input {
 }
 
 /* Button Styling */
-button {
+button, .button {
     width: 100%;
     padding: 10px;
     font-size: 1rem;
@@ -77,95 +145,38 @@ button {
     transition: background 0.3s ease-in-out;
 }
 
-button:hover {
+button:hover, .button:hover {
     background-color: #50fa7b; /* Green on hover */
 }
 
 /* Fade-in animation */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
-
-/* ===== Additions for Homepage ===== */
-
-/* Layout for homepage */
+/* Homepage layout */
 body.homepage {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
 }
 
-/* Header styling */
-header {
-    background-color: #282a36;
-    text-align: center;
-    padding: 2rem 1rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-/* Header title */
-header h1 {
-    font-size: 2.5rem;
-    margin-bottom: 0.5rem;
-}
-
-/* Header subtitle */
-header p {
-    font-size: 1.2rem;
-    color: #8be9fd;
-}
-
-/* Navigation bar */
+/* Navigation links */
 nav {
-    background-color: #44475a;
     display: flex;
     justify-content: center;
     gap: 2rem;
     padding: 1rem;
-    padding-right: 10px;
-    padding-left: 10px;
+    background-color: #44475a;
 }
 
-nav a {
-    color: #f8f8f2;
-    text-decoration: none;
-    font-weight: 500;
-    transition: color 0.3s;
-}
-
-nav a:hover {
-    color: #50fa7b;
-}
-
-/* Main content area */
-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
-    text-align: center;
-}
-
-main h1 {
-    font-size: 2rem;
-    margin-bottom: 1rem;
-}
-
-main p {
-    font-size: 1.1rem;
-    max-width: 800px;
-}
-
-/* ===== Homepage Fade-In Animation ===== */
+/* Homepage fade-in animation */
 .homepage {
     animation: fadeIn 0.8s ease-in-out;
 }
 
-/* ===== Make Homepage Content Wider ===== */
+/* Max width for content */
 header, nav, main {
     width: 100%;
     max-width: 2000px;

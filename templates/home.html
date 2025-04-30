@@ -1,23 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Welcome to My Website</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body class="homepage">
-    <header>
-        <h1>Welcome to my website</h1>
-    </header>
-    <nav>
-        <a href="#">Home</a>
-        <a href="/moon">Moon Game</a>
-        <a href="/all">All stuff</a>
-    </nav>
+    <script>
+        var isAuthenticated = {{ current_user.is_authenticated | tojson }}; // Checks if the user is authenticated
+    </script>
+
+    <!-- Placeholder where header and nav will be dynamically loaded -->
+    <div id="nav-placeholder"></div>
+
     <main>
         <h1>Hello!</h1>
         <p>This is the homepage of my website.</p>
     </main>
+
+    <script src="/static/loadnav.js"></script>
 </body>
 </html>

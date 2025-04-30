@@ -110,27 +110,32 @@
 </head>
 
 <body>
-    <div class="container">
-        <h1 id="joingame">Join a Game</h1>
-        <input type="text" id="game_id" placeholder="Enter Game ID">
-        <button onclick="joinGame()" id="joinButton">Join</button>
-        <p id="status"></p>
-        <div style="display: flex; justify-content: space-between; width: 100%;">
-            <p id="you" style="margin: 0;" hidden>You: 0</p>
-            <p id="opponent" style="margin: 0;" hidden>Opponent: 0</p>
+    <script>
+        var isAuthenticated = {{ current_user.is_authenticated| tojson }};
+    </script>
+    <div id="nav-placeholder"></div>
+    <main>
+        <div class="container">
+            <h1 id="joingame">Join a Game</h1>
+            <input type="text" id="game_id" placeholder="Enter Game ID">
+            <button onclick="joinGame()" id="joinButton">Join</button>
+            <p id="status"></p>
+            <div style="display: flex; justify-content: space-between; width: 100%;">
+                <p id="you" style="margin: 0;" hidden>You: 0</p>
+                <p id="opponent" style="margin: 0;" hidden>Opponent: 0</p>
+            </div>
+            <div style="margin: auto;">
+                <canvas id="gameBoardCanvas" style="display: block; margin-top: 20px" width="0" height="0"></canvas>
+            </div>
+            <div id="hand_container" style="height: 0px;width: 0px;">
+                <img hidden id="img0" src="/static/assets/moons/0.png">
+                <img hidden id="img1" src="/static/assets/moons/0.png">
+                <img hidden id="img2" src="/static/assets/moons/0.png">
+            </div>
+            <br>
+            <button id="playAgain" onclick="window.location.href = '/moon';" hidden>Play again</button>
         </div>
-        <div style="margin: auto;">
-            <canvas id="gameBoardCanvas" style="display: block; margin-top: 20px" width="0" height="0"></canvas>
-        </div>
-        <div id="hand_container" style="height: 0px;width: 0px;">
-            <img hidden id="img0" src="/static/assets/moons/0.png">
-            <img hidden id="img1" src="/static/assets/moons/0.png">
-            <img hidden id="img2" src="/static/assets/moons/0.png">
-        </div>
-        <br>
-        <button id="playAgain" onclick="window.location.href = '/moon';" hidden>Play again</button>
-    </div>
-
+    </main>
     <script>
         var socket = io();
         let currclick = -1;
@@ -200,7 +205,7 @@
             console.log("Score update: " + data.player + " - " + data.total_score);
             let targetId = (data.player === "host") ? "opponent" : "you";
             document.getElementById(targetId).innerHTML = (data.player === "host" ? "Opponent: " : "You: ") + data.total_score;
-            if (data.total_score === 0) {
+            if (data.score_this_move === 0) {
                 return;
             }
             // Create the popup
@@ -250,13 +255,49 @@
         });
         socket.on("game_over", function (data) {
             const winner = data.winner;
+            const hb = data.hb;
+            const pb = data.pb; // Corrected typo from `hb` to `pb`
+            console.log(`Host bonus: ${hb}, Player bonus: ${pb}`);
             const score = data.score;
             const message = winner === "host" ? "You lost!" : (winner === "player" ? "You won!" : "It's a draw!");
-            document.getElementById("status").innerText = message;
-            document.getElementById("you").remove();
-            document.getElementById("opponent").remove();
-            document.getElementById("hand_container").remove();
-            document.getElementById("playAgain").removeAttribute("hidden");
+            document.getElementById("status").innerHTML = "Final Bonus...";
+            // Delay all DOM updates by 2 seconds
+            setTimeout(() => {
+                document.getElementById("status").innerText = message;
+                document.getElementById("hand_container").remove();
+                document.getElementById("playAgain").removeAttribute("hidden");
+            }, 5000);
+            // Function to show bonus popups
+            function showBonusPopup(targetId, bonus) {
+                if (bonus <= 0) return; // No bonus to show
+                const popup = document.createElement("div");
+                popup.classList.add("score-popup");
+                popup.innerText = `+${bonus}`;
+                const scoreElement = document.getElementById(targetId);
+                const rect = scoreElement.getBoundingClientRect();
+                const containerRect = document.querySelector('.container').getBoundingClientRect();
+                popup.style.left = (rect.left - containerRect.left + rect.width / 2 - 10) + "px";
+                popup.style.top = (rect.top - containerRect.top - 10) + "px";
+                document.querySelector('.container').appendChild(popup);
+                setTimeout(() => popup.remove(), 1000);
+            }
+
+            // Show host and player bonuses
+            if (hb > 0) {
+                // Delay score change by 1 second
+                setTimeout(() => {
+                    showBonusPopup("opponent", hb);
+                    document.getElementById("opponent").innerHTML = `Opponent: ${data.host}`;
+                }, 2000);
+            }
+            if (pb > 0) {
+                // Delay score change by 1 second
+                setTimeout(() => {
+                    document.getElementById("you").innerHTML = `You: ${data.player}`;
+                    showBonusPopup("you", pb);
+                }, 3500);
+            }
+
         });
 
         function updateCards(first, second, third) {
@@ -480,6 +521,7 @@
         }
 
     </script>
+    <script src="/static/loadnav.js"></script>
 </body>
 
 </html>

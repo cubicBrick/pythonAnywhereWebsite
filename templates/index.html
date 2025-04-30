@@ -1,24 +1,34 @@
 <!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>xhxp</title>
     <link rel="stylesheet" href="/static/style.css"> <!-- Link the CSS file -->
 </head>
+
 <body>
+    <script>
+        var isAuthenticated = {{ current_user.is_authenticated|tojson }};
+    </script>
+    <div id="nav-placeholder"></div> 
+    <main>
     <div class="container">
         <h1>Welcome to the Moon Game</h1>
-        <p>A copy of the Google Doodle</p>
+        <p>A copy of the Google Doodle</p><br>
         <div class="button-group">
-            <form action="/host" method="get">
+            <form id="a" action="/host" method="get">
                 <button type="submit">Host a Game</button>
             </form>
-            <form action="/join" method="get" style="margin-top: 10px;">
+            <form id="b" action="/join" method="get" style="margin-top: 10px;">
                 <button type="submit">Join a Game</button>
             </form>
         </div>
     </div>
+    </main>
+    <script src="/static/loadnav.js"></script>
 </body>
+
 </html>
